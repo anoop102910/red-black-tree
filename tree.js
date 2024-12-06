@@ -44,22 +44,64 @@ class RedBlackTree {
         this.updateVisualization();
     }
 
-    insertNode(node, newNode) {
+    async insertNode(node, newNode) {
         if (newNode.value < node.value) {
+            await this.visualizeStep(
+                `Comparing ${newNode.value} with ${node.value}`,
+                { 
+                    node: node.value, 
+                    type: 'compare', 
+                    message: `${newNode.value} < ${node.value}\nGoing left`, 
+                    comparingValue: newNode.value
+                }
+            );
             if (node.left === null) {
                 node.left = newNode;
                 newNode.parent = node;
+                await this.visualizeStep(
+                    `Found insertion point`,
+                    { 
+                        node: newNode.value, 
+                        type: 'highlight',
+                        message: `Inserting ${newNode.value} as left child of ${node.value}`,
+                        insertPoint: true
+                    }
+                );
             } else {
-                this.insertNode(node.left, newNode);
+                await this.insertNode(node.left, newNode);
             }
         } else {
+            await this.visualizeStep(
+                `Comparing ${newNode.value} with ${node.value}`,
+                { 
+                    node: node.value, 
+                    type: 'compare', 
+                    message: `${newNode.value} >= ${node.value}\nGoing right`,
+                    comparingValue: newNode.value
+                }
+            );
             if (node.right === null) {
                 node.right = newNode;
                 newNode.parent = node;
+                await this.visualizeStep(
+                    `Found insertion point`,
+                    { 
+                        node: newNode.value, 
+                        type: 'highlight',
+                        message: `Inserting ${newNode.value} as right child of ${node.value}`,
+                        insertPoint: true
+                    }
+                );
             } else {
-                this.insertNode(node.right, newNode);
+                await this.insertNode(node.right, newNode);
             }
         }
+    }
+
+    async visualizeStep(message, highlightInfo = null) {
+        addStep(message);
+        this.updateVisualization(highlightInfo);
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     fixInsertion(node) {
@@ -163,7 +205,7 @@ class RedBlackTree {
         node.parent = leftChild;
     }
 
-    updateVisualization() {
+    updateVisualization(highlightInfo = null) {
         const width = document.getElementById('treeContainer').clientWidth;
         const height = document.getElementById('treeContainer').clientHeight;
         
@@ -174,6 +216,23 @@ class RedBlackTree {
             .attr('width', width)
             .attr('height', height);
         
+        const tooltip = svg.append("g")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+        
+        tooltip.append("rect")
+            .attr("class", "tooltip-bg")
+            .attr("rx", 4)
+            .attr("ry", 4)
+            .attr("fill", "#333")
+            .attr("opacity", 0.9);
+
+        tooltip.append("text")
+            .attr("class", "tooltip-text")
+            .attr("fill", "#fff")
+            .attr("text-anchor", "middle")
+            .attr("dy", "0.35em");
+
         const margin = {top: 40, right: 40, bottom: 40, left: 40};
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
@@ -202,13 +261,66 @@ class RedBlackTree {
         
         const nodes = g.selectAll('.node')
             .data(treeData.descendants())
-            .enter().append('g')
+            .enter()
+            .append('g')
             .attr('class', 'node')
             .attr('transform', d => `translate(${d.x},${d.y})`);
         
+        nodes.append('text')
+            .attr('class', 'comparison-text')
+            .attr('dy', '35')
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '11px')
+            .attr('fill', '#333')
+            .text(d => {
+                if (highlightInfo && highlightInfo.node === d.data.value) {
+                    return highlightInfo.message || '';
+                }
+                return '';
+            })
+            .call(wrap, 120);
+
+        if (highlightInfo && highlightInfo.comparingValue) {
+            nodes.append('path')
+                .attr('class', 'comparison-path')
+                .attr('d', d => {
+                    if (highlightInfo.node === d.data.value) {
+                        const direction = highlightInfo.message.includes('right') ? 1 : -1;
+                        return `M 0,20 L ${30 * direction},40`;
+                    }
+                    return '';
+                })
+                .attr('stroke', '#666')
+                .attr('stroke-width', '2')
+                .attr('fill', 'none')
+                .attr('marker-end', 'url(#arrow)');
+        }
+
+        svg.append('defs').append('marker')
+            .attr('id', 'arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 8)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#666');
+
         nodes.append('circle')
             .attr('r', 15)
-            .attr('class', d => d.data.color);
+            .attr('class', d => {
+                if (highlightInfo && highlightInfo.node === d.data.value) {
+                    if (highlightInfo.type === 'compare') {
+                        showTooltip(tooltip, d.x, d.y, highlightInfo.message);
+                        return 'comparing';
+                    } else if (highlightInfo.type === 'highlight') {
+                        return 'highlighted';
+                    }
+                }
+                return d.data.color;
+            });
         
         nodes.append('text')
             .attr('dy', '0.35em')
@@ -244,4 +356,45 @@ function insertNode() {
 function deleteNode() {
     // Implementation for delete operation can be added here
     alert('Delete operation not implemented yet');
+}
+
+function showTooltip(tooltip, x, y, text) {
+    tooltip.select("text")
+        .text(text);
+
+    const bbox = tooltip.select("text").node().getBBox();
+    
+    tooltip.select("rect")
+        .attr("x", -bbox.width/2 - 5)
+        .attr("y", -bbox.height/2)
+        .attr("width", bbox.width + 10)
+        .attr("height", bbox.height + 4);
+
+    const adjustedY = y - bbox.height - 30;
+    
+    tooltip.raise()
+        .attr("transform", `translate(${x},${adjustedY})`)
+        .transition()
+        .duration(200)
+        .style("opacity", 1);
+}
+
+function wrap(text, width) {
+    text.each(function() {
+        const text = d3.select(this);
+        const words = text.text().split(/\n/);
+        const lineHeight = 1.1;
+        const y = text.attr("y");
+        const dy = parseFloat(text.attr("dy"));
+
+        text.text(null);
+
+        words.forEach((word, i) => {
+            text.append("tspan")
+                .attr("x", 0)
+                .attr("y", y)
+                .attr("dy", `${i * lineHeight + dy}em`)
+                .text(word);
+        });
+    });
 } 

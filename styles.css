@@ -73,4 +73,64 @@ input, button {
 
 .node, .link {
     transition: all 0.3s ease-in-out;
+}
+
+.comparing {
+    fill: #ff8800;
+    stroke: #000;
+    stroke-width: 3px;
+}
+
+.highlighted {
+    fill: #44ff44;
+    stroke: #000;
+    stroke-width: 3px;
+}
+
+.tooltip {
+    pointer-events: none;
+}
+
+.tooltip-bg {
+    fill: rgba(0, 0, 0, 0.8);
+    rx: 4;
+    ry: 4;
+}
+
+.tooltip-text {
+    font-size: 12px;
+    fill: white;
+}
+
+.comparison-text {
+    font-family: Arial, sans-serif;
+    pointer-events: none;
+}
+
+.comparison-path {
+    opacity: 0.6;
+}
+
+.node.comparing circle {
+    stroke: #ff8800;
+    stroke-width: 3px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { stroke-width: 2px; }
+    50% { stroke-width: 4px; }
+    100% { stroke-width: 2px; }
+}
+
+.node.insert-point circle {
+    stroke: #44ff44;
+    stroke-width: 3px;
+    animation: insertPulse 1s infinite;
+}
+
+@keyframes insertPulse {
+    0% { r: 15; }
+    50% { r: 18; }
+    100% { r: 15; }
 } 
