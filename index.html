@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red-Black Tree Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <input type="number" id="nodeInput" placeholder="Enter a number">
+            <button onclick="insertNode()">Insert Node</button>
+            <button onclick="deleteNode()">Delete Node</button>
+            <button onclick="clearSteps()">Clear Steps</button>
+        </div>
+        <div class="step-log" id="stepLog"></div>
+        <div id="treeContainer"></div>
+    </div>
+    <script src="tree.js"></script>
+</body>
+</html> 
